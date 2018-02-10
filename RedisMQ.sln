@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMQ", "src\RedisMQ\RedisMQ.csproj", "{34C026BE-13D0-474E-9411-6651BF6203B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMQ.Tests", "tests\RedisMQ.Tests\RedisMQ.Tests.csproj", "{0D7A0D36-8BB0-42B2-9366-79A3891808F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{34C026BE-13D0-474E-9411-6651BF6203B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34C026BE-13D0-474E-9411-6651BF6203B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34C026BE-13D0-474E-9411-6651BF6203B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34C026BE-13D0-474E-9411-6651BF6203B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D7A0D36-8BB0-42B2-9366-79A3891808F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D7A0D36-8BB0-42B2-9366-79A3891808F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D7A0D36-8BB0-42B2-9366-79A3891808F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D7A0D36-8BB0-42B2-9366-79A3891808F8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

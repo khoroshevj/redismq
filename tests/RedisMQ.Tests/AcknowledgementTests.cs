@@ -1,15 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging.Abstractions;
 using StackExchange.Redis;
 using Xunit;
 
 namespace RedisMQ.Tests
 {
-    [Category("Acknowledgement")]
+    [Trait("Category", "Acknowledgement")]
     public class AcknowledgementTests : RedisTestsBase
     {
         [Fact(DisplayName = "Acked message should be received exactly once")]
@@ -103,7 +100,7 @@ namespace RedisMQ.Tests
             }
         }
         
-        [Theory(DisplayName = "Acked message should be received exactly once")]
+        [Theory(DisplayName = "Requeued message should be received exact number of times")]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]

@@ -1,14 +1,15 @@
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using StackExchange.Redis;
 
 namespace RedisMQ.Tests
 {
-    public class RedisTestsBase
+    public abstract class RedisTestsBase
     {
         protected readonly string ConnectionString;
 
-        public RedisTestsBase()
+        protected RedisTestsBase()
         {
             ConnectionString = "127.0.0.1:6379,abortConnect=false";
         }
@@ -29,7 +30,9 @@ namespace RedisMQ.Tests
             string taskQueue,
             string processingQueuePrefix,
             TestDtoHandler[] testDtoHandlers,
-            string deadLetterQueue = "deadletter")
+            string deadLetterQueue = "deadletter",
+            int instanceCount = 1,
+            int lookupDelayMilliseconds = 1)
         {
             var consumeManager = new RedisMessagesConsumerManager(
                 NullLogger<RedisMessagesConsumerManager>.Instance,
@@ -38,8 +41,8 @@ namespace RedisMQ.Tests
                 {
                     TasksQueueName = taskQueue,
                     DeadLetterQueue = deadLetterQueue,
-                    InstancesCount = 1,
-                    LookupDelaySeconds = 1,
+                    InstancesCount = instanceCount,
+                    LookupDelayMilliseconds = lookupDelayMilliseconds,
                     ProcessingQueuePrefix = processingQueuePrefix
                 },
                 new DefaultRedisMessageKeyBuilder());

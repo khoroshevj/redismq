@@ -27,12 +27,13 @@ namespace RedisMQ
             RedisMQSettings mqSettings,
             IRedisMessageKeyBuilder keyBuilder)
         {
-            _multiplexer = ConnectionMultiplexer.Connect(connectionString);
-
-            _logger = logger;
+            const int lockReserve = 500;
             _mqSettings = mqSettings;
-            _lockTtl = TimeSpan.FromSeconds(_mqSettings.LookupDelaySeconds + 10);
-
+            
+            _multiplexer = ConnectionMultiplexer.Connect(connectionString);
+            _logger = logger;
+            
+            _lockTtl = TimeSpan.FromMilliseconds(_mqSettings.LookupDelayMilliseconds + lockReserve);
             _lockToken = Guid.NewGuid().ToString();
             
             _consumer = new RedisMessagesConsumer(
@@ -85,33 +86,48 @@ namespace RedisMQ
             {
                 while (!_cts.IsCancellationRequested)
                 {
-                    var db = _multiplexer.GetDatabase();
                     for (var i = 0; i < _mqSettings.InstancesCount; i++)
                     {
+                        var db = _multiplexer.GetDatabase();
                         var processingQueueName = $"{_mqSettings.ProcessingQueuePrefix}__{i}";
                         var processingQueueLock = $"queuelock:{processingQueueName}";
-                        var lockAcquired = await db.LockTakeAsync(processingQueueLock, _lockToken, _lockTtl);
-                        if (lockAcquired)
+                        
+                        if (_captured && processingQueueName == _capturedQueue)
                         {
-                            if (!_captured)
-                            {
-                                _consumer.Start(processingQueueName);
-                                _captured = true;
-                                _capturedQueue = processingQueueName;
-                            }
-                            else
-                            {
-                                await MoveMessagesBackToTasksAsync(db, processingQueueName, processingQueueLock);
-                            }
+                            await db.LockExtendAsync(processingQueueLock, _lockToken, _lockTtl)
+                                .ConfigureAwait(false);
                         }
-                        else if (_captured && processingQueueName == _capturedQueue)
+                        else
                         {
-                            await db.LockExtendAsync(processingQueueLock, _lockToken, _lockTtl);
+                            var lockAcquired = await db.LockTakeAsync(processingQueueLock, _lockToken, _lockTtl)
+                                .ConfigureAwait(false);
+
+                            if (lockAcquired)
+                            {
+                                await MoveMessagesBackToTasksAsync(db, processingQueueName);
+                                if (!_captured)
+                                {
+                                    _captured = true;
+                                    _capturedQueue = processingQueueName;
+                                    _consumer.Start(processingQueueName);
+                                    
+                                    await db.LockExtendAsync(processingQueueLock, _lockToken, _lockTtl)
+                                        .ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await db.LockReleaseAsync(processingQueueLock, _lockToken)
+                                        .ConfigureAwait(false);
+                                }
+                            }
                         }
                     }
 
-                    await Task.Delay(_mqSettings.LookupDelaySeconds * 1000);
+                    /*await Task.Delay(_mqSettings.LookupDelayMilliseconds)
+                        .ConfigureAwait(false);*/
                 }
+                
+                _logger.LogTrace("");
             })
             {
                 IsBackground = true
@@ -120,24 +136,13 @@ namespace RedisMQ
             thread.Start();
         }
 
-        private async Task MoveMessagesBackToTasksAsync(IDatabase db, string processingQueueName, string processingQueueLock)
+        private async Task MoveMessagesBackToTasksAsync(IDatabase db, string processingQueueName)
         {
-            try
+            RedisValue popedValue;
+            do
             {
-                RedisValue popedValue;
-                do
-                {
-                    popedValue = await db.ListRightPopLeftPushAsync(processingQueueName, _mqSettings.TasksQueueName);
-                } while (popedValue.HasValue);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "");
-            }
-            finally
-            {
-                await db.LockReleaseAsync(processingQueueLock, _lockToken);
-            }
+                popedValue = await db.ListRightPopLeftPushAsync(processingQueueName, _mqSettings.TasksQueueName);
+            } while (popedValue.HasValue);
         }
     }
 }

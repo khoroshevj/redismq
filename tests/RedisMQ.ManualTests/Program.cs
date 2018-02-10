@@ -33,7 +33,7 @@ namespace RedisMQ.ManualTests
                 {
                     DeadLetterQueue = "ddd",
                     InstancesCount = 2,
-                    LookupDelaySeconds = 2,
+                    LookupDelayMilliseconds = 2 * 1000,
                     ProcessingQueuePrefix = _processingQueuePrefix,
                     TasksQueueName = _tasksQueue
                 },
@@ -46,7 +46,7 @@ namespace RedisMQ.ManualTests
                 {
                     DeadLetterQueue = "ddd",
                     InstancesCount = 2,
-                    LookupDelaySeconds = 2,
+                    LookupDelayMilliseconds = 2 * 1000,
                     ProcessingQueuePrefix = _processingQueuePrefix,
                     TasksQueueName = _tasksQueue
                 },

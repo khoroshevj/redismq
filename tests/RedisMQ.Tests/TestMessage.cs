@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -27,13 +28,13 @@ namespace RedisMQ.Tests
     {
         private readonly Func<IAcknowledgement, Task> _acknowledgementTask;
 
-        public List<(string MessageId, TestMessage Message)> Received { get; }
+        public ConcurrentBag<(string MessageId, TestMessage Message)> Received { get; }
 
         public TestDtoHandler(Func<IAcknowledgement, Task> acknowledgementTask)
             : base(NullLogger.Instance)
         {
             _acknowledgementTask = acknowledgementTask;
-            Received = new List<(string, TestMessage)>();
+            Received = new ConcurrentBag<(string, TestMessage)>();
         }
 
         public override async Task HandleMessageAsync(
@@ -43,7 +44,7 @@ namespace RedisMQ.Tests
         {
             Received.Add((messageId, message));
 
-            await _acknowledgementTask(acknowledgement);
+            await _acknowledgementTask(acknowledgement).ConfigureAwait(false);
         }
     }
 }

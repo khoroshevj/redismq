@@ -62,11 +62,14 @@ namespace RedisMQ
                 var db = _multiplexer.GetDatabase();
                 while (!_cts.IsCancellationRequested)
                 {
-                    var key = await db.ListRightPopLeftPushAsync(_tasksQueue, processingQueue);
+                    var key = await db.ListRightPopLeftPushAsync(_tasksQueue, processingQueue)
+                        .ConfigureAwait(false);
+
                     if (key.HasValue)
                     {
                         var message = await db.StringGetAsync(key.ToString());
-                        await OnReceived(processingQueue, key, message);
+                        await OnReceived(processingQueue, key, message)
+                            .ConfigureAwait(false);
                     }
                 }
             })
@@ -105,7 +108,8 @@ namespace RedisMQ
                     transaction.ListLeftPushAsync(_deadLetterQueue, key);
 #pragma warning restore 4014
             
-                    await transaction.ExecuteAsync();
+                    await transaction.ExecuteAsync()
+                        .ConfigureAwait(false);
                 }
             }
             catch (Exception e)

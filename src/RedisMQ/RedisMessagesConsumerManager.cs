@@ -24,7 +24,8 @@ namespace RedisMQ
         public RedisMessagesConsumerManager(
             ILogger<RedisMessagesConsumerManager> logger,
             string connectionString,
-            RedisMQSettings mqSettings)
+            RedisMQSettings mqSettings,
+            IRedisMessageKeyBuilder keyBuilder)
         {
             _multiplexer = ConnectionMultiplexer.Connect(connectionString);
 
@@ -38,7 +39,8 @@ namespace RedisMQ
                 logger,
                 _multiplexer,
                 _mqSettings.TasksQueueName,
-                _mqSettings.DeadLetterQueue);
+                _mqSettings.DeadLetterQueue,
+                keyBuilder);
         }
 
         public void Start()

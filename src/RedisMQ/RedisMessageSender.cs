@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 
 namespace RedisMQ
 {
@@ -10,10 +9,17 @@ namespace RedisMQ
     
     public class RedisMessageSender : IRedisMessageSender
     {
+        private readonly IRedisMQMessageSerializer _serializer;
         private readonly string _tasksQueue;
 
         public RedisMessageSender(string tasksQueue)
+            : this(tasksQueue, null)
         {
+        }
+
+        public RedisMessageSender(string tasksQueue, IRedisMQMessageSerializer serializer)
+        {
+            _serializer = serializer ?? new SimpleJsonSerializer();
             _tasksQueue = tasksQueue;
         }
 
@@ -22,7 +28,7 @@ namespace RedisMQ
             var payloadType = RedisQueueMessagePayloadTypeNameCache<TMessage>.Name;
             var messageKey = $"{payloadType}:{messageId}";
             
-            transaction.StringSetAsync(messageKey, JsonConvert.SerializeObject(message));
+            transaction.StringSetAsync(messageKey, _serializer.Serialize(message));
             transaction.ListLeftPushAsync(_tasksQueue, messageKey);
         }
     }

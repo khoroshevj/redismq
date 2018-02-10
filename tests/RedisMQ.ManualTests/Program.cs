@@ -24,6 +24,8 @@ namespace RedisMQ.ManualTests
             _tasksQueue = _uniqPrefix + "_TaskQueue";
             _processingQueuePrefix = _uniqPrefix + "_ProcessingQueue_";
 
+            var keyBuilder = new DefaultRedisMessageKeyBuilder();
+
             var consumer1 = new RedisMessagesConsumerManager(
                 NullLogger<RedisMessagesConsumerManager>.Instance, 
                 connectionString,
@@ -34,7 +36,8 @@ namespace RedisMQ.ManualTests
                     LookupDelaySeconds = 2,
                     ProcessingQueuePrefix = _processingQueuePrefix,
                     TasksQueueName = _tasksQueue
-                });
+                },
+                keyBuilder);
             
             var consumer2 = new RedisMessagesConsumerManager(
                 NullLogger<RedisMessagesConsumerManager>.Instance, 
@@ -46,7 +49,8 @@ namespace RedisMQ.ManualTests
                     LookupDelaySeconds = 2,
                     ProcessingQueuePrefix = _processingQueuePrefix,
                     TasksQueueName = _tasksQueue
-                });
+                },
+                keyBuilder);
 
             Console.WriteLine("registering");
             consumer2.RegisterMessageHandler(new ConsoleOuputHanlder("2", NullLogger.Instance));

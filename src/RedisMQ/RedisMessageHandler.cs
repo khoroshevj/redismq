@@ -31,7 +31,8 @@ namespace RedisMQ
             ILogger logger,
             IRedisMQMessageSerializer messageSerializer)
         {
-            Logger = logger;
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            
             _messageSerializer = messageSerializer ?? new SimpleJsonSerializer();
         }
         

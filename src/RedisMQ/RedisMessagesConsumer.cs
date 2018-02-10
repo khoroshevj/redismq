@@ -19,6 +19,7 @@ namespace RedisMQ
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private readonly ILogger _logger;
         private readonly IConnectionMultiplexer _multiplexer;
+        private readonly IRedisMessageKeyBuilder _keyBuilder;
 
         private readonly string _tasksQueue;
         private readonly string _deadLetterQueue;
@@ -27,7 +28,8 @@ namespace RedisMQ
             ILogger logger,
             IConnectionMultiplexer multiplexer,
             string tasksQueue,
-            string deadLetterQueue)
+            string deadLetterQueue,
+            IRedisMessageKeyBuilder keyBuilder)
         {
             _handlers = new Dictionary<string, IRedisMessageHandler>();
             
@@ -35,6 +37,7 @@ namespace RedisMQ
             _multiplexer = multiplexer;
             _tasksQueue = tasksQueue;
             _deadLetterQueue = deadLetterQueue;
+            _keyBuilder = keyBuilder;
         }
 
         public void RegisterMessageHandler(string payloadType, IRedisMessageHandler handler)
@@ -78,7 +81,7 @@ namespace RedisMQ
         {
             try
             {
-                var messageProperties = GetMessageProperties(key);
+                var messageProperties = _keyBuilder.GetMessageProperties(key);
                 var payloadType = messageProperties.PayloadType;
                 if (!string.IsNullOrEmpty(payloadType) && _handlers.TryGetValue(payloadType, out var handler))
                 {
@@ -108,27 +111,6 @@ namespace RedisMQ
             catch (Exception e)
             {
                 _logger?.LogError(e, "unhandled");
-            }
-        }
-
-        private MessageProperties GetMessageProperties(string key)
-        {
-            var parts = key.Split(":");
-
-            return new MessageProperties(
-                payloadType: parts[0],
-                messageId: parts[1]);
-        }
-
-        private struct MessageProperties
-        {
-            public string PayloadType { get; }
-            public string MessageId { get; }
-
-            public MessageProperties(string payloadType, string messageId)
-            {
-                PayloadType = payloadType;
-                MessageId = messageId;
             }
         }
 

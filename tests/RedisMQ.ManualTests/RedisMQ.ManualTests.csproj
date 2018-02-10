@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="StackExchange.Redis, Version=1.2.6.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\.nuget\packages\stackexchange.redis\1.2.6\lib\netstandard1.5\StackExchange.Redis.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\RedisMQ\RedisMQ.csproj">
+      <Project>{34C026BE-13D0-474E-9411-6651BF6203B5}</Project>
+      <Name>RedisMQ</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

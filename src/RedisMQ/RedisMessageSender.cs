@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using System;
+using StackExchange.Redis;
 
 namespace RedisMQ
 {
@@ -19,8 +20,8 @@ namespace RedisMQ
 
         public RedisMessageSender(string tasksQueue, IRedisMQMessageSerializer serializer)
         {
+            _tasksQueue = tasksQueue ?? throw new ArgumentNullException(nameof(tasksQueue));
             _serializer = serializer ?? new SimpleJsonSerializer();
-            _tasksQueue = tasksQueue;
         }
 
         public void Send<TMessage>(ITransaction transaction, string messageId, TMessage message)

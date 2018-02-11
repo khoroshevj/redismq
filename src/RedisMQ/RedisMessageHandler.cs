@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using RedisMQ.Helpers;
 
 namespace RedisMQ
 {
@@ -23,7 +23,7 @@ namespace RedisMQ
         protected ILogger Logger { get; }
 
         protected RedisMessageHandlerBase(ILogger logger)
-            : this(logger, null)
+            : this(logger, new SimpleJsonSerializer())
         {
         }
 
@@ -31,9 +31,11 @@ namespace RedisMQ
             ILogger logger,
             IRedisMQMessageSerializer messageSerializer)
         {
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            ThrowHelper.ThrowIfNull(logger, nameof(logger));
+            ThrowHelper.ThrowIfNull(messageSerializer, nameof(messageSerializer));
             
-            _messageSerializer = messageSerializer ?? new SimpleJsonSerializer();
+            Logger = logger;
+            _messageSerializer = messageSerializer;
         }
         
         async Task IRedisMessageHandler.HandleMessageAsync(IAcknowledgement acknowledgement, string message, string messageId)
@@ -43,7 +45,7 @@ namespace RedisMQ
             {
                 deserialized = Deserialize(message);
             }
-            catch (JsonException exception)
+            catch (Exception exception)
             {
                 Logger.LogError(exception, "error deserializing message");
                 await acknowledgement.NackAsync();

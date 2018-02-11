@@ -22,7 +22,7 @@ namespace RedisMQ.Tests
         {
             try
             {
-                _testOutput.WriteLine($"{DateTime.Now.Second}.{DateTime.Now.Millisecond}\t{formatter(state, exception)}");
+                _testOutput.WriteLine($"{DateTime.Now:mm:ss.fff}\t{formatter(state, exception)}");
             }
             catch { }
             

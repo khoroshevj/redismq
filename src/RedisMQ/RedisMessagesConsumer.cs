@@ -7,13 +7,13 @@ using StackExchange.Redis;
 
 namespace RedisMQ
 {
-    public interface IRedisMessagesConsumer : IDisposable
+    internal interface IRedisMessagesConsumer : IDisposable
     {
         void RegisterMessageHandler(string payloadType, IRedisMessageHandler handler);
         void Start(string processingQueue);
     }
     
-    public class RedisMessagesConsumer : IRedisMessagesConsumer
+    internal class RedisMessagesConsumer : IRedisMessagesConsumer
     {
         private readonly Dictionary<string, IRedisMessageHandler> _handlers;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -46,7 +46,7 @@ namespace RedisMQ
             {
                 if (_handlers.ContainsKey(payloadType))
                 {
-                    var message = $"Handler for messages with type '{payloadType}' have been already added";
+                    var message = $"Handler for messages with type '{payloadType}' has been already added";
                     _logger?.LogError(message);
                     throw new ArgumentException(message);
                 }
@@ -68,7 +68,7 @@ namespace RedisMQ
                     if (key.HasValue)
                     {
                         var message = await db.StringGetAsync(key.ToString());
-                        await OnReceived(processingQueue, key, message)
+                        await ProcessMessageAsync(processingQueue, key, message)
                             .ConfigureAwait(false);
                     }
                 }
@@ -80,7 +80,7 @@ namespace RedisMQ
             thread.Start();
         }
         
-        private async Task OnReceived(string processingQueue, string key, string message)
+        private async Task ProcessMessageAsync(string processingQueue, string key, string message)
         {
             try
             {

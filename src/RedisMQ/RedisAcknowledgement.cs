@@ -18,7 +18,7 @@ namespace RedisMQ
         private readonly string _processingQueue;
         private readonly string _messageKey;
 
-        public RedisAcknowledgement(
+        internal RedisAcknowledgement(
             IConnectionMultiplexer multiplexer,            
             string messageKey,
             string processingQueue,
@@ -49,20 +49,35 @@ namespace RedisMQ
             transaction.ListLeftPushAsync(_deadLetterQueue, _messageKey);
 #pragma warning restore 4014
             
-            await transaction.ExecuteAsync();
+            await transaction.ExecuteAsync()
+                .ConfigureAwait(false);
         }
 
         public async Task RequeueAsync(int delayMilliseconds = 0)
         {
-            var db = _multiplexer.GetDatabase();
-            var transaction = db.CreateTransaction();
+            if (delayMilliseconds > 0)
+            {
+                Task.Delay(delayMilliseconds)
+                    .ContinueWith(async (_, __) => { await RequeueAsync(); }, null)
+                    .ConfigureAwait(false);
+            }
+            else
+            {   
+                RequeueAsync();
+            }
             
+            async Task RequeueAsync()
+            {
+                var db = _multiplexer.GetDatabase();
+                var transaction = db.CreateTransaction();
+
 #pragma warning disable 4014
-            transaction.ListRemoveAsync(_processingQueue, _messageKey, 1);
-            transaction.ListLeftPushAsync(_tasksQueue, _messageKey);
+                transaction.ListRemoveAsync(_processingQueue, _messageKey, 1);
+                transaction.ListLeftPushAsync(_tasksQueue, _messageKey);
 #pragma warning restore 4014
-            
-            await transaction.ExecuteAsync();
+
+                await transaction.ExecuteAsync(CommandFlags.FireAndForget);
+            }
         }
     }
 }

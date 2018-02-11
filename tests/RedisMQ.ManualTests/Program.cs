@@ -24,8 +24,6 @@ namespace RedisMQ.ManualTests
             _tasksQueue = _uniqPrefix + "_TaskQueue";
             _processingQueuePrefix = _uniqPrefix + "_ProcessingQueue_";
 
-            var keyBuilder = new DefaultRedisMessageKeyBuilder();
-
             var consumer1 = new RedisMessagesConsumerManager(
                 NullLogger<RedisMessagesConsumerManager>.Instance, 
                 connectionString,
@@ -36,8 +34,7 @@ namespace RedisMQ.ManualTests
                     LookupDelayMilliseconds = 2 * 1000,
                     ProcessingQueuePrefix = _processingQueuePrefix,
                     TasksQueueName = _tasksQueue
-                },
-                keyBuilder);
+                });
             
             var consumer2 = new RedisMessagesConsumerManager(
                 NullLogger<RedisMessagesConsumerManager>.Instance, 
@@ -49,8 +46,7 @@ namespace RedisMQ.ManualTests
                     LookupDelayMilliseconds = 2 * 1000,
                     ProcessingQueuePrefix = _processingQueuePrefix,
                     TasksQueueName = _tasksQueue
-                },
-                keyBuilder);
+                });
 
             Console.WriteLine("registering");
             consumer2.RegisterMessageHandler(new ConsoleOuputHanlder("2", NullLogger.Instance));
@@ -81,7 +77,9 @@ namespace RedisMQ.ManualTests
                     
                     var transaction = db.CreateTransaction();
                     
+#pragma warning disable 4014
                     transaction.StringSetAsync(key, value);
+#pragma warning restore 4014
                     redisMessageSender.Send(transaction, key, redisMessage);
 
                     await transaction.ExecuteAsync();

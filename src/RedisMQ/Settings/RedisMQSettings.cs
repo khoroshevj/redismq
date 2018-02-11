@@ -5,6 +5,8 @@
     /// </summary>
     public class RedisMQSettings
     {
+        public string ConnectionString { get; set; }
+        
         /// <summary>
         /// Key of redis list that will hold messages
         /// </summary>

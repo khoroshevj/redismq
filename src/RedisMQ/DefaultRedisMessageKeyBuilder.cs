@@ -1,4 +1,7 @@
-﻿namespace RedisMQ
+﻿using System.Runtime.CompilerServices;
+[assembly:InternalsVisibleTo("RedisMQ.Tests")]
+
+namespace RedisMQ
 {
     public interface IRedisMessageKeyBuilder
     {
@@ -6,7 +9,7 @@
         MessageProperties GetMessageProperties(string key);
     }
     
-    public class DefaultRedisMessageKeyBuilder : IRedisMessageKeyBuilder
+    internal class DefaultRedisMessageKeyBuilder : IRedisMessageKeyBuilder
     {
         private readonly string _delimeter;
 

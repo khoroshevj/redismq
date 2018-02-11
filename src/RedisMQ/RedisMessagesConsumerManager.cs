@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using RedisMQ.Helpers;
 using StackExchange.Redis;
 
 namespace RedisMQ
@@ -24,10 +25,25 @@ namespace RedisMQ
         public RedisMessagesConsumerManager(
             ILogger<RedisMessagesConsumerManager> logger,
             string connectionString,
+            RedisMQSettings mqSettings)
+            : this(logger, connectionString, mqSettings, new DefaultRedisMessageKeyBuilder())
+        {
+
+        }
+
+        public RedisMessagesConsumerManager(
+            ILogger<RedisMessagesConsumerManager> logger,
+            string connectionString,
             RedisMQSettings mqSettings,
             IRedisMessageKeyBuilder keyBuilder)
         {
+            ThrowHelper.ThrowIfNull(logger, nameof(logger));
+            ThrowHelper.ThrowIfNull(connectionString, nameof(connectionString));
+            ThrowHelper.ThrowIfNull(mqSettings, nameof(mqSettings));
+            ThrowHelper.ThrowIfNull(keyBuilder, nameof(keyBuilder));
+            
             const int lockReserve = 500;
+            
             _mqSettings = mqSettings;
             
             _multiplexer = ConnectionMultiplexer.Connect(connectionString);
@@ -50,12 +66,12 @@ namespace RedisMQ
         }
         
         /// <summary>
-        /// Добавить обработчик сообщения.
-        /// На один тип сообщения, должен быть один обработчик
+        /// Register handler for type
+        /// Important! Only one handler for type permitted
         /// </summary>
-        /// <param name="type">Тип события</param>
-        /// <param name="handler">класс обработчик</param>
-        /// <exception cref="ArgumentException"> обработчик для этого типа сообщений уже добавлен </exception>
+        /// <param name="type">type with RedisQueueMessageAttribute</param>
+        /// <param name="handler">handler</param>
+        /// <exception cref="ArgumentException"> Handler for that type of messages  has been already added </exception>
         public void RegisterMessageHandler(Type type, IRedisMessageHandler handler)
         {
             var name = RedisQueueMessagePayloadTypeNameCache.Get(type);
@@ -64,12 +80,12 @@ namespace RedisMQ
         }
 
         /// <summary>
-        /// Добавить обработчик сообщения.
-        /// На один тип сообщения, должен быть один обработчик
+        /// Register handler for type
+        /// Important! Only one handler for type permitted
         /// </summary>
-        /// <typeparam name="TMessage"> сообщение, долно быть помечено аттрибутом RedisQueueMessageAttribute </typeparam>
-        /// <param name="handler">класс обработчик</param>
-        /// <exception cref="ArgumentException"> обработчик для этого типа сообщений уже добавлен </exception>
+        /// <param name="type">type with RedisQueueMessageAttribute</param>
+        /// <param name="handler">handler</param>
+        /// <exception cref="ArgumentException"> Handler for that type of messages  has been already added </exception>
         public void RegisterMessageHandler<TMessage>(IRedisMessageHandler<TMessage> handler)
         {
             RegisterMessageHandler(typeof(TMessage), handler);
@@ -78,7 +94,8 @@ namespace RedisMQ
         public void Dispose()
         {
             _cts.Cancel();
-            _consumer?.Dispose();
+            _consumer.Dispose();
+            _multiplexer.Dispose();
         }
 
         private void StartIdleQueueLookup()

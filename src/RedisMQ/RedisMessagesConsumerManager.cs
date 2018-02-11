@@ -77,6 +77,7 @@ namespace RedisMQ
 
         public void Dispose()
         {
+            _cts.Cancel();
             _consumer?.Dispose();
         }
 
@@ -94,40 +95,56 @@ namespace RedisMQ
                         
                         if (_captured && processingQueueName == _capturedQueue)
                         {
+                            _logger.LogTrace($"{_lockToken} | Continue processing {i} queue");
+                            
                             await db.LockExtendAsync(processingQueueLock, _lockToken, _lockTtl)
                                 .ConfigureAwait(false);
                         }
                         else
                         {
+                            _logger.LogTrace($"{_lockToken} | Trying to capture lock for {i} queue");
+                            
                             var lockAcquired = await db.LockTakeAsync(processingQueueLock, _lockToken, _lockTtl)
                                 .ConfigureAwait(false);
-
+                            
                             if (lockAcquired)
                             {
+                                _logger.LogTrace($"{_lockToken} | Captured lock for {i} queue");
+                                
+                                _logger.LogTrace($"{_lockToken} | Moving messages from {i} to tasks queue");
                                 await MoveMessagesBackToTasksAsync(db, processingQueueName);
-                                if (!_captured)
+                                if (_captured)
                                 {
-                                    _captured = true;
-                                    _capturedQueue = processingQueueName;
-                                    _consumer.Start(processingQueueName);
-                                    
-                                    await db.LockExtendAsync(processingQueueLock, _lockToken, _lockTtl)
+                                    await db.LockReleaseAsync(processingQueueLock, _lockToken)
                                         .ConfigureAwait(false);
                                 }
                                 else
                                 {
-                                    await db.LockReleaseAsync(processingQueueLock, _lockToken)
+                                    _logger.LogTrace($"{_lockToken} | Starting to process {processingQueueName} queue");
+
+                                    _captured = true;
+                                    _capturedQueue = processingQueueName;
+                                    _consumer.Start(processingQueueName);
+
+                                    await db.LockExtendAsync(processingQueueLock, _lockToken, _lockTtl)
                                         .ConfigureAwait(false);
                                 }
                             }
                         }
                     }
 
-                    /*await Task.Delay(_mqSettings.LookupDelayMilliseconds)
-                        .ConfigureAwait(false);*/
+                    await Task.Delay(_mqSettings.LookupDelayMilliseconds)
+                        .ConfigureAwait(false);
                 }
                 
-                _logger.LogTrace("");
+                if (_captured)
+                {
+                    await _multiplexer.GetDatabase()
+                    .LockReleaseAsync(_capturedQueue, _lockToken)
+                    .ConfigureAwait(false);
+                }
+
+                _logger.LogTrace($"{_lockToken} | Cancelled for token ");
             })
             {
                 IsBackground = true

@@ -2,12 +2,20 @@
 using System.Net.Mail;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace RedisMQ.Tests
 {
     [Trait("Category", "Reliability")]
     public class ReliabilityTests : RedisTestsBase
     {
+        private readonly ITestOutputHelper _output;
+
+        public ReliabilityTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact(DisplayName = "When one of consumers fails second should start processing messages")]
         public async Task SecondShouldStartProcessingTest()
         {
@@ -36,13 +44,15 @@ namespace RedisMQ.Tests
                 processingQueuePrefix,
                 new[] {testDtoHandler1},
                 instanceCount: 1,
-                lookupDelayMilliseconds: 100))
+                lookupDelayMilliseconds: 100,
+                output: _output))
             using (var manager2 = CreaterConsumerManager(
                 taskQueue,
                 processingQueuePrefix,
                 new[] {testDtoHandler2},
                 instanceCount: 1,
-                lookupDelayMilliseconds: 100))
+                lookupDelayMilliseconds: 100,
+                output: _output))
             {
                 manager1.Start();
                 await Task.Delay(10);
@@ -53,15 +63,13 @@ namespace RedisMQ.Tests
                 Assert.Equal(0, testDtoHandler2.Received.Count);
                 manager1.Dispose();
 
-                /*await WaitingAssert.CheckBecomeTrueAsync(
+                await WaitingAssert.CheckBecomeTrueAsync(
                     assertion: () =>
                         Assert.Equal(
                             expected: messagesCount,
                             actual: testDtoHandler1.Received.Count + testDtoHandler2.Received.Count),
-                    waitIntervalMs: 1000,
-                    waitRetries: 60);*/
-
-                await Task.Delay(5000);
+                    waitIntervalMs: 100,
+                    waitRetries: 100);
 
                 // check both handlers received messages
                 Assert.NotInRange(testDtoHandler1.Received.Count, 0, 1);

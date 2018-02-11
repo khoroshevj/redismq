@@ -1,7 +1,9 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using StackExchange.Redis;
+using Xunit.Abstractions;
 
 namespace RedisMQ.Tests
 {
@@ -32,10 +34,15 @@ namespace RedisMQ.Tests
             TestDtoHandler[] testDtoHandlers,
             string deadLetterQueue = "deadletter",
             int instanceCount = 1,
-            int lookupDelayMilliseconds = 1)
+            int lookupDelayMilliseconds = 1,
+            ITestOutputHelper output = null)
         {
+            var logger = output != null
+                ? new TestOutputLogger<RedisMessagesConsumerManager>(output)
+                : (ILogger<RedisMessagesConsumerManager>)NullLogger<RedisMessagesConsumerManager>.Instance;
+            
             var consumeManager = new RedisMessagesConsumerManager(
-                NullLogger<RedisMessagesConsumerManager>.Instance,
+                logger,
                 ConnectionString,
                 new RedisMQSettings
                 {
